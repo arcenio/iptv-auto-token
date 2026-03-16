@@ -1,3 +1,5 @@
 #EXTM3U
-#EXTINF:-1,RCN En Vivo
-https://regionales.saohgdasregions.fun:9092/MTcyLjIwOC4xNTQuNQ==/18_.m3u8?token=HOZLTYL2F0M-NoSPrL2iyQ&expires=1773678298
+#EXTINF:-1 tvg-id="rcn" tvg-name="RCN" group-title="TV",RCN En Vivo
+#EXTVLCOPT:http-referrer=https://www.cablevisionhd.com/
+#EXTVLCOPT:http-user-agent=Mozilla/5.0
+https://regionales.saohgdasregions.fun:9092/MjAuMTYxLjMwLjE5Nw==/18_.m3u8?token=_LhATOPQkF0zkT6jQsI3lw&expires=1773678648
