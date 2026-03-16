@@ -1,15 +1,15 @@
-import requests
 import re
+from playwright.sync_api import sync_playwright
 
 url = "https://www.cablevisionhd.com/rcn-en-vivo.html"
 
-headers = {
-"User-Agent": "Mozilla/5.0"
-}
+with sync_playwright() as p:
+    browser = p.chromium.launch(headless=True)
+    page = browser.new_page()
 
-try:
-    r = requests.get(url, headers=headers, timeout=20)
-    html = r.text
+    page.goto(url, timeout=60000)
+
+    html = page.content()
 
     patron = r'https?://[^"\']+\.m3u8[^"\']*'
     encontrados = re.findall(patron, html)
@@ -25,11 +25,9 @@ try:
         with open("lista.m3u","w",encoding="utf-8") as f:
             f.write(lista)
 
-        print("M3U8 encontrado:")
-        print(enlace)
+        print("M3U8 encontrado:", enlace)
 
     else:
-        print("No se encontro ningun enlace m3u8")
+        print("No se encontró enlace m3u8")
 
-except Exception as e:
-    print("Error:",e)
+    browser.close()
