@@ -1,29 +1,35 @@
 import requests
 import re
 
-pagina = "https://www.cablevisionhd.com/rcn-en-vivo.html"
+url = "https://www.cablevisionhd.com/rcn-en-vivo.html"
+
+headers = {
+"User-Agent": "Mozilla/5.0"
+}
 
 try:
-    respuesta = requests.get(pagina, timeout=20)
-    html = respuesta.text
+    r = requests.get(url, headers=headers, timeout=20)
+    html = r.text
 
-    patron = r'https://[^"]+\.m3u8[^"]*'
-    resultado = re.search(patron, html)
+    patron = r'https?://[^"\']+\.m3u8[^"\']*'
+    encontrados = re.findall(patron, html)
 
-    if resultado:
-        enlace = resultado.group(0)
+    if encontrados:
 
-        contenido = "#EXTM3U\n"
-        contenido += "#EXTINF:-1 tvg-id=\"rcn\" tvg-name=\"RCN\" group-title=\"TV\",RCN En Vivo\n"
-        contenido += enlace + "\n"
+        enlace = encontrados[0]
 
-        with open("lista.m3u", "w", encoding="utf-8") as f:
-            f.write(contenido)
+        lista = "#EXTM3U\n"
+        lista += "#EXTINF:-1,RCN En Vivo\n"
+        lista += enlace + "\n"
 
-        print("Lista IPTV actualizada correctamente")
+        with open("lista.m3u","w",encoding="utf-8") as f:
+            f.write(lista)
+
+        print("M3U8 encontrado:")
+        print(enlace)
 
     else:
-        print("No se encontro enlace m3u8")
+        print("No se encontro ningun enlace m3u8")
 
 except Exception as e:
-    print("Error:", e)
+    print("Error:",e)
