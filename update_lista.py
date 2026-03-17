@@ -8,7 +8,6 @@ canales = {
 
 streams = {}
 
-
 def capturar_stream(nombre, url):
 
     stream_url = None
@@ -19,10 +18,8 @@ def capturar_stream(nombre, url):
         link = response.url
 
         if ".m3u8" in link and "token=" in link:
-
             stream_url = link
-
-            print(f"Stream encontrado para {nombre}:")
+            print(f"Stream encontrado para {nombre}")
             print(link)
 
     with sync_playwright() as p:
@@ -57,7 +54,6 @@ def generar_lista(streams):
         contenido += f"#EXTINF:-1,{nombre}\n{url}\n\n"
 
     with open("lista.m3u", "w", encoding="utf-8") as f:
-
         f.write(contenido)
 
 
@@ -68,7 +64,6 @@ def main():
         stream = capturar_stream(nombre, url)
 
         if stream:
-
             streams[nombre] = stream
 
     if streams:
