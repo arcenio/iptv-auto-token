@@ -1,8 +1,26 @@
 #EXTM3U
 
-#EXTINF:-1,RCN
-https://regionales.saohgdasregions.fun:9092/NjguMjIwLjYwLjE1MA==/18_.m3u8?token=oZKWaAn46WlLsRF88WI6iw&expires=1773761573
+#EXTINF:-1,tudn-en-vivo.html
+https://deportes.ksdjugfsddeports.com:9092/NTIuMTc2LjEyNC4xODU=/1_.m3u8?token=h43j25LV7Pp0tFke__e6ZA&expires=1773752467
 
-#EXTINF:-1,CARACOL
-https://regionales.saohgdasregions.fun:9092/NjguMjIwLjYwLjE1MA==/17_.m3u8?token=RyfxyU8sHDrysUX_OCGYgQ&expires=1773761586
+#EXTINF:-1,movistar-deportes-en-vivo.html
+https://deportes.ksdjugfsddeports.com:9092/NTIuMTc2LjEyNC4xODU=/41_.m3u8?token=QRr8vYPWjJKZUccIZR9dUw&expires=1773752504
+
+#EXTINF:-1,directv-sports-2-en-vivo.html
+https://deportes.ksdjugfsddeports.com:9092/NTIuMTc2LjEyNC4xODU=/7_.m3u8?token=DLH5sFk7OUYY1LSGyP6Dqw&expires=1773752570
+
+#EXTINF:-1,fox-sports-3-en-vivo.html
+https://deportes.ksdjugfsddeports.com:9092/NTIuMTc2LjEyNC4xODU=/10_.m3u8?token=j1gULtGDKX6UTb33MpzIYQ&expires=1773752720
+
+#EXTINF:-1,atv-en-vivo.html
+https://regionales.saohgdasregions.fun:9092/NTIuMTc2LjEyNC4xODU=/23_.m3u8?token=_GUFpNWkh8yPokgOr7YgwA&expires=1773763652
+
+#EXTINF:-1,galavision-en-vivo.html
+https://regionales.saohgdasregions.fun:9092/NTIuMTc2LjEyNC4xODU=/11_.m3u8?token=LtcxLAgcE6iAd9MGmAR7vA&expires=1773763680
+
+#EXTINF:-1,tnt-en-vivo.html
+https://regionales.saohgdasregions.fun:9092/NTIuMTc2LjEyNC4xODU=/52_.m3u8?token=6Gi6kWZSLydSNCdAIFahiQ&expires=1773763812
+
+#EXTINF:-1,studio-universal-en-vivo.html
+https://regionales.saohgdasregions.fun:9092/NTIuMTc2LjEyNC4xODU=/64_.m3u8?token=GG15yFWWTyW6k0uzjgm11w&expires=1773763925
 
