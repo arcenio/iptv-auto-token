@@ -1,42 +1,21 @@
-from playwright.sync_api import sync_playwright
+import requests
+import re
 
 URL = "https://www.cablevisionhd.com/rcn-en-vivo.html"
 
-def main():
+headers = {
+    "User-Agent": "Mozilla/5.0"
+}
 
-    stream = None
+r = requests.get(URL, headers=headers, timeout=20)
+html = r.text
 
-    with sync_playwright() as p:
+match = re.search(r"https://[^\"']+\.m3u8[^\"']+", html)
 
-        browser = p.chromium.launch(headless=True)
+if match:
+    stream = match.group(0)
 
-        page = browser.new_page()
-
-        def detectar(response):
-
-            nonlocal stream
-
-            if ".m3u8" in response.url:
-
-                if not stream:
-
-                    stream = response.url
-                    print("Stream encontrado:")
-                    print(stream)
-
-        page.on("response", detectar)
-
-        print("Abriendo página...")
-
-        page.goto(URL)
-
-        page.wait_for_timeout(10000)
-
-        browser.close()
-
-    if stream:
-
-        contenido = f"""#EXTM3U
+    m3u = f"""#EXTM3U
 #EXTINF:-1 tvg-id="rcn" tvg-name="RCN",RCN
 #EXTVLCOPT:http-user-agent=Mozilla/5.0
 #EXTVLCOPT:http-referrer=https://regionales.saohgdasregions.fun/
@@ -44,15 +23,9 @@ def main():
 {stream}
 """
 
-        with open("lista.m3u","w",encoding="utf-8") as f:
+    with open("lista.m3u", "w") as f:
+        f.write(m3u)
 
-            f.write(contenido)
-
-        print("lista.m3u actualizada")
-
-    else:
-
-        print("No se encontró el stream")
-
-if __name__ == "__main__":
-    main()
+    print("Stream actualizado")
+else:
+    print("No se encontró stream")
