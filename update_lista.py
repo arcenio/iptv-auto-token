@@ -1,44 +1,86 @@
 from playwright.sync_api import sync_playwright
 
-url = "https://www.cablevisionhd.com/rcn-en-vivo.html"
+canales = {
+    "RCN": "https://www.cablevisionhd.com/rcn-en-vivo.html",
+    "CARACOL": "https://www.cablevisionhd.com/caracol-en-vivo.html",
+    "CANAL UNO": "https://www.cablevisionhd.com/canal-uno-en-vivo.html",
+}
 
-m3u8_lista = []
+streams = {}
 
-def capturar_respuesta(response):
-    global m3u8_lista
-    enlace = response.url
 
-    if ".m3u8" in enlace:
-        m3u8_lista.append(enlace)
+def capturar_stream(nombre, url):
 
-with sync_playwright() as p:
+    stream_url = None
 
-    browser = p.chromium.launch(headless=True)
-    page = browser.new_page()
+    def capturar_response(response):
+        nonlocal stream_url
 
-    page.on("response", capturar_respuesta)
+        link = response.url
 
-    page.goto(url, timeout=60000)
+        if ".m3u8" in link and "token=" in link:
 
-    page.wait_for_timeout(20000)
+            stream_url = link
 
-    if m3u8_lista:
+            print(f"Stream encontrado para {nombre}:")
+            print(link)
 
-        enlace_final = m3u8_lista[-1]
+    with sync_playwright() as p:
 
-        contenido = "#EXTM3U\n"
-        contenido += "#EXTINF:-1 tvg-id=\"rcn\" tvg-name=\"RCN\" group-title=\"TV\",RCN En Vivo\n"
-        contenido += "#EXTVLCOPT:http-referrer=https://regionales.saohgdasregions.fun/\n"
-        contenido += "#EXTVLCOPT:http-origin=https://regionales.saohgdasregions.fun\n"
-        contenido += "#EXTVLCOPT:http-user-agent=Mozilla/5.0\n"
-        contenido += enlace_final + "\n"
+        browser = p.chromium.launch(headless=True)
 
-        with open("lista.m3u", "w", encoding="utf-8") as f:
-            f.write(contenido)
+        context = browser.new_context(
+            user_agent="Mozilla/5.0"
+        )
 
-        print("M3U8 usado:", enlace_final)
+        page = context.new_page()
+
+        page.on("response", capturar_response)
+
+        print(f"Abriendo {nombre}...")
+
+        page.goto(url)
+
+        page.wait_for_timeout(10000)
+
+        browser.close()
+
+    return stream_url
+
+
+def generar_lista(streams):
+
+    contenido = "#EXTM3U\n\n"
+
+    for nombre, url in streams.items():
+
+        contenido += f"#EXTINF:-1,{nombre}\n{url}\n\n"
+
+    with open("lista.m3u", "w", encoding="utf-8") as f:
+
+        f.write(contenido)
+
+
+def main():
+
+    for nombre, url in canales.items():
+
+        stream = capturar_stream(nombre, url)
+
+        if stream:
+
+            streams[nombre] = stream
+
+    if streams:
+
+        generar_lista(streams)
+
+        print("Lista IPTV actualizada")
 
     else:
-        print("No se detecto m3u8")
 
-    browser.close()
+        print("No se encontraron streams")
+
+
+if __name__ == "__main__":
+    main()
