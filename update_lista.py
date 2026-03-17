@@ -6,8 +6,10 @@ m3u8_encontrado = None
 
 def capturar_respuesta(response):
     global m3u8_encontrado
-    if ".m3u8" in response.url:
-        m3u8_encontrado = response.url
+    enlace = response.url
+
+    if ".m3u8" in enlace and "token=" in enlace and "expires=" in enlace:
+        m3u8_encontrado = enlace
 
 with sync_playwright() as p:
 
@@ -29,12 +31,13 @@ with sync_playwright() as p:
         contenido += "#EXTVLCOPT:http-user-agent=Mozilla/5.0\n"
         contenido += m3u8_encontrado + "\n"
 
-        with open("lista.m3u","w",encoding="utf-8") as f:
+        with open("lista.m3u", "w", encoding="utf-8") as f:
             f.write(contenido)
 
-        print("M3U8 capturado:", m3u8_encontrado)
+        print("M3U8 capturado correctamente:")
+        print(m3u8_encontrado)
 
     else:
-        print("No se detecto ningun m3u8")
+        print("No se encontro m3u8 con token")
 
     browser.close()
