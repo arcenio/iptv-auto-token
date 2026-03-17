@@ -24,7 +24,8 @@ with sync_playwright() as p:
 
         contenido = "#EXTM3U\n"
         contenido += "#EXTINF:-1 tvg-id=\"rcn\" tvg-name=\"RCN\" group-title=\"TV\",RCN En Vivo\n"
-        contenido += "#EXTVLCOPT:http-referrer=https://www.cablevisionhd.com/\n"
+        contenido += "#EXTVLCOPT:http-referrer=https://regionales.saohgdasregions.fun/\n"
+        contenido += "#EXTVLCOPT:http-origin=https://regionales.saohgdasregions.fun\n"
         contenido += "#EXTVLCOPT:http-user-agent=Mozilla/5.0\n"
         contenido += m3u8_encontrado + "\n"
 
