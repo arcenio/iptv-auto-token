@@ -1,39 +1,33 @@
-name: Actualizar lista IPTV
+name: Actualizar IPTV
 
 on:
   schedule:
     - cron: "*/10 * * * *"
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   update:
     runs-on: ubuntu-latest
 
     steps:
-
-      - name: Clonar repositorio
+      - name: Clonar repo
         uses: actions/checkout@v3
 
       - name: Instalar Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.x"
 
       - name: Instalar dependencias
-        run: |
-          pip install playwright
-          playwright install chromium
+        run: pip install requests
 
-      - name: Ejecutar script
-        run: python update_lista.py
+      - name: Ejecutar extractor
+        run: python extract_rcn.py
 
       - name: Subir cambios
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "actions@github.com"
+          git config --global user.name "bot"
+          git config --global user.email "bot@github.com"
           git add lista.m3u
-          git commit -m "Actualizacion automatica lista IPTV" || echo "Sin cambios"
+          git commit -m "Actualizar stream"
           git push
