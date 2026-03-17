@@ -1,108 +1,58 @@
 from playwright.sync_api import sync_playwright
 
-sites = [
-    "https://www.cablevisionhd.com",
-    "https://television-libre.net"
-]
-
-streams = {}
-
-def encontrar_paginas(page, base):
-
-    links = page.query_selector_all("a")
-
-    paginas = []
-
-    for link in links:
-
-        href = link.get_attribute("href")
-
-        if href and ("en-vivo" in href or "tv" in href):
-
-            if href.startswith("http"):
-
-                paginas.append(href)
-
-            else:
-
-                paginas.append(base + href)
-
-    return paginas
-
-
-def capturar_stream(page):
-
-    stream = None
-
-    def detectar(response):
-
-        nonlocal stream
-
-        url = response.url
-
-        if ".m3u8" in url:
-
-            if not stream:
-
-                stream = url
-
-                print("Stream encontrado:", url)
-
-    page.on("response", detectar)
-
-    page.wait_for_timeout(8000)
-
-    return stream
-
+URL = "https://www.cablevisionhd.com/rcn-en-vivo.html"
 
 def main():
+
+    stream = None
 
     with sync_playwright() as p:
 
         browser = p.chromium.launch(headless=True)
 
-        context = browser.new_context()
+        page = browser.new_page()
 
-        page = context.new_page()
+        def detectar(response):
 
-        for site in sites:
+            nonlocal stream
 
-            print("Escaneando:", site)
+            if ".m3u8" in response.url:
 
-            page.goto(site)
+                if not stream:
 
-            paginas = encontrar_paginas(page, site)
+                    stream = response.url
+                    print("Stream encontrado:")
+                    print(stream)
 
-            print("Paginas encontradas:", len(paginas))
+        page.on("response", detectar)
 
-            for url in paginas:
+        print("Abriendo página...")
 
-                print("Abriendo:", url)
+        page.goto(URL)
 
-                page.goto(url)
-
-                stream = capturar_stream(page)
-
-                if stream:
-
-                    nombre = url.split("/")[-1]
-
-                    streams[nombre] = stream
+        page.wait_for_timeout(10000)
 
         browser.close()
 
-    contenido = "#EXTM3U\n\n"
+    if stream:
 
-    for nombre, url in streams.items():
+        contenido = f"""#EXTM3U
+#EXTINF:-1 tvg-id="rcn" tvg-name="RCN",RCN
+#EXTVLCOPT:http-user-agent=Mozilla/5.0
+#EXTVLCOPT:http-referrer=https://regionales.saohgdasregions.fun/
+#EXTVLCOPT:http-origin=https://regionales.saohgdasregions.fun
+{stream}
+"""
 
-        contenido += f"#EXTINF:-1,{nombre}\n{url}\n\n"
+        with open("lista.m3u","w",encoding="utf-8") as f:
 
-    with open("lista.m3u", "w", encoding="utf-8") as f:
+            f.write(contenido)
 
-        f.write(contenido)
+        print("lista.m3u actualizada")
 
-    print("Lista IPTV generada")
+    else:
 
+        print("No se encontró el stream")
 
 if __name__ == "__main__":
     main()
