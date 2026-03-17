@@ -1,4 +1,4 @@
-name: Actualizar IPTV
+name: Actualizar lista IPTV
 
 on:
   schedule:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Clonar repo
+      - name: Clonar repositorio
         uses: actions/checkout@v3
 
       - name: Instalar Python
@@ -21,13 +21,13 @@ jobs:
       - name: Instalar dependencias
         run: pip install requests
 
-      - name: Ejecutar extractor
-        run: python extract_rcn.py
+      - name: Ejecutar script
+        run: python update_lista.py
 
       - name: Subir cambios
         run: |
-          git config --global user.name "bot"
+          git config --global user.name "iptv-bot"
           git config --global user.email "bot@github.com"
           git add lista.m3u
-          git commit -m "Actualizar stream"
+          git commit -m "Actualizar stream" || echo "Sin cambios"
           git push
