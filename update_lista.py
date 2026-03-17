@@ -1,26 +1,77 @@
 from playwright.sync_api import sync_playwright
 
-canales = {
-    "RCN": "https://www.cablevisionhd.com/rcn-en-vivo.html",
-    "CARACOL": "https://www.cablevisionhd.com/caracol-en-vivo.html",
-    "CANAL UNO": "https://www.cablevisionhd.com/canal-uno-en-vivo.html",
-}
+BASE_URL = "https://www.cablevisionhd.com"
 
 streams = {}
 
-def capturar_stream(nombre, url):
 
-    stream_url = None
+def encontrar_canales(page):
 
-    def capturar_response(response):
-        nonlocal stream_url
+    print("Buscando canales...")
+
+    enlaces = page.query_selector_all("a")
+
+    canales = {}
+
+    for e in enlaces:
+
+        href = e.get_attribute("href")
+
+        if href and "-en-vivo" in href:
+
+            nombre = href.replace("-en-vivo.html", "").replace("-", " ").upper()
+
+            url = BASE_URL + "/" + href
+
+            canales[nombre] = url
+
+    return canales
+
+
+def capturar_stream(page, nombre, url):
+
+    stream_encontrado = None
+
+    def detectar(response):
+
+        nonlocal stream_encontrado
 
         link = response.url
 
-        if ".m3u8" in link and "token=" in link:
-            stream_url = link
-            print(f"Stream encontrado para {nombre}")
-            print(link)
+        if ".m3u8" in link:
+
+            if not stream_encontrado:
+
+                stream_encontrado = link
+
+                print(f"Stream detectado para {nombre}")
+                print(link)
+
+    page.on("response", detectar)
+
+    print(f"Abrendo {nombre}")
+
+    page.goto(url)
+
+    page.wait_for_timeout(10000)
+
+    return stream_encontrado
+
+
+def generar_lista():
+
+    contenido = "#EXTM3U\n\n"
+
+    for nombre, url in streams.items():
+
+        contenido += f"#EXTINF:-1 group-title=\"TV\",{nombre}\n{url}\n\n"
+
+    with open("lista.m3u", "w", encoding="utf-8") as f:
+
+        f.write(contenido)
+
+
+def main():
 
     with sync_playwright() as p:
 
@@ -32,45 +83,29 @@ def capturar_stream(nombre, url):
 
         page = context.new_page()
 
-        page.on("response", capturar_response)
+        print("Abriendo página principal...")
 
-        print(f"Abriendo {nombre}...")
+        page.goto(BASE_URL)
 
-        page.goto(url)
+        canales = encontrar_canales(page)
 
-        page.wait_for_timeout(10000)
+        print(f"Canales encontrados: {len(canales)}")
+
+        for nombre, url in canales.items():
+
+            stream = capturar_stream(page, nombre, url)
+
+            if stream:
+
+                streams[nombre] = stream
 
         browser.close()
 
-    return stream_url
-
-
-def generar_lista(streams):
-
-    contenido = "#EXTM3U\n\n"
-
-    for nombre, url in streams.items():
-
-        contenido += f"#EXTINF:-1,{nombre}\n{url}\n\n"
-
-    with open("lista.m3u", "w", encoding="utf-8") as f:
-        f.write(contenido)
-
-
-def main():
-
-    for nombre, url in canales.items():
-
-        stream = capturar_stream(nombre, url)
-
-        if stream:
-            streams[nombre] = stream
-
     if streams:
 
-        generar_lista(streams)
+        generar_lista()
 
-        print("Lista IPTV actualizada")
+        print("Lista IPTV creada")
 
     else:
 
