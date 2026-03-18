@@ -1,21 +1,6 @@
-from flask import Flask, Response
 from playwright.sync_api import sync_playwright
-import requests
-import time
-import os
 
-app = Flask(__name__)
-
-LAST_STREAM = None
-LAST_UPDATE = 0
-
-def get_stream():
-    global LAST_STREAM, LAST_UPDATE
-
-    # evitar actualizar muy seguido
-    if time.time() - LAST_UPDATE < 300 and LAST_STREAM:
-        return LAST_STREAM
-
+def run():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
@@ -24,45 +9,39 @@ def get_stream():
 
         def handle_request(request):
             nonlocal stream_url
-            if ".m3u8" in request.url:
-                stream_url = request.url
+            url = request.url
 
+            if ".m3u8" in url:
+                stream_url = url
+                print("Stream capturado:", stream_url)
+
+        # Escuchar tráfico de red
         page.on("request", handle_request)
 
+        # Abrir página
         page.goto("https://www.cablevisionhd.com/rcn-en-vivo.html", timeout=60000)
-        page.wait_for_timeout(8000)
+
+        # Esperar a que cargue el player
+        page.wait_for_timeout(10000)
 
         browser.close()
 
         if stream_url:
-            LAST_STREAM = stream_url
-            LAST_UPDATE = time.time()
-            print("Nuevo stream:", stream_url)
+            m3u = f"""#EXTM3U
+#EXTINF:-1 tvg-id="rcn" tvg-name="RCN",RCN
+#EXTVLCOPT:http-user-agent=Mozilla/5.0
+#EXTVLCOPT:http-referrer=https://www.cablevisionhd.com/
+#EXTVLCOPT:http-origin=https://www.cablevisionhd.com
+{stream_url}
+"""
 
-        return LAST_STREAM
+            with open("lista.m3u", "w") as f:
+                f.write(m3u)
 
+            print("Lista IPTV actualizada correctamente")
 
-@app.route("/rcn.m3u8")
-def proxy():
-    stream = get_stream()
-
-    if not stream:
-        return "Error obteniendo stream", 500
-
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Referer": "https://www.cablevisionhd.com/",
-        "Origin": "https://www.cablevisionhd.com"
-    }
-
-    r = requests.get(stream, headers=headers, stream=True)
-
-    return Response(
-        r.iter_content(chunk_size=1024),
-        content_type=r.headers.get("Content-Type")
-    )
-
+        else:
+            print("No se encontró ningún stream")
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
-    app.run(host="0.0.0.0", port=port)
+    run()
