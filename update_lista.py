@@ -1,47 +1,24 @@
-from playwright.sync_api import sync_playwright
+from flask import Flask, Response
+import requests
 
-def run():
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+app = Flask(__name__)
 
-        stream_url = None
+STREAM_URL = "https://regionales.saohgdasregions.fun:9092/MTkwLjIxOS4xNDQuMzY=/18_.m3u8"
 
-        def handle_request(request):
-            nonlocal stream_url
-            url = request.url
+HEADERS = {
+    "User-Agent": "Mozilla/5.0",
+    "Referer": "https://www.cablevisionhd.com/",
+    "Origin": "https://www.cablevisionhd.com"
+}
 
-            if ".m3u8" in url:
-                stream_url = url
-                print("Stream capturado:", stream_url)
+@app.route("/rcn.m3u8")
+def proxy():
+    r = requests.get(STREAM_URL, headers=HEADERS, stream=True)
 
-        # Escuchar tráfico de red
-        page.on("request", handle_request)
-
-        # Abrir página real
-        page.goto("https://www.cablevisionhd.com/rcn-en-vivo.html", timeout=60000)
-
-        # Esperar a que cargue el player
-        page.wait_for_timeout(10000)
-
-        browser.close()
-
-        if stream_url:
-            m3u = f"""#EXTM3U
-#EXTINF:-1 tvg-id="rcn" tvg-name="RCN",RCN
-#EXTVLCOPT:http-user-agent=Mozilla/5.0
-#EXTVLCOPT:http-referrer=https://regionales.saohgdasregions.fun/
-#EXTVLCOPT:http-origin=https://regionales.saohgdasregions.fun
-{stream_url}
-"""
-
-            with open("lista.m3u", "w") as f:
-                f.write(m3u)
-
-            print("Lista IPTV actualizada correctamente")
-
-        else:
-            print("No se encontró ningún stream")
+    return Response(
+        r.iter_content(chunk_size=1024),
+        content_type=r.headers.get("Content-Type")
+    )
 
 if __name__ == "__main__":
-    run()
+    app.run(host="0.0.0.0", port=8000)
