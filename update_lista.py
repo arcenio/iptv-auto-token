@@ -2,6 +2,7 @@ from flask import Flask, Response
 from playwright.sync_api import sync_playwright
 import requests
 import time
+import os
 
 app = Flask(__name__)
 
@@ -11,7 +12,7 @@ LAST_UPDATE = 0
 def get_stream():
     global LAST_STREAM, LAST_UPDATE
 
-    # actualizar cada 5 minutos
+    # evitar actualizar muy seguido
     if time.time() - LAST_UPDATE < 300 and LAST_STREAM:
         return LAST_STREAM
 
@@ -63,4 +64,5 @@ def proxy():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    app.run(host="0.0.0.0", port=port)
