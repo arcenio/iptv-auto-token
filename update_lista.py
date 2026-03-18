@@ -1,35 +1,32 @@
-import requests
-import re
+from playwright.sync_api import sync_playwright
 
-# URL donde REALMENTE está el player
-url = "https://www.cablevisionhd.com/rcn-en-vivo.html"
+def run():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
 
-headers = {
-    "User-Agent": "Mozilla/5.0"
-}
+        stream_url = None
 
-try:
-    r = requests.get(url, headers=headers, timeout=20)
-    html = r.text
+        def handle_request(request):
+            nonlocal stream_url
+            url = request.url
 
-    # Buscar iframe (donde está el verdadero reproductor)
-    iframe = re.search(r'<iframe[^>]+src="([^"]+)"', html)
+            if ".m3u8" in url:
+                stream_url = url
+                print("Stream capturado:", stream_url)
 
-    if iframe:
-        iframe_url = iframe.group(1)
-        print("Iframe encontrado:", iframe_url)
+        # Escuchar tráfico de red
+        page.on("request", handle_request)
 
-        r2 = requests.get(iframe_url, headers=headers, timeout=20)
-        html2 = r2.text
+        # Abrir página real
+        page.goto("https://www.cablevisionhd.com/rcn-en-vivo.html", timeout=60000)
 
-        # Buscar m3u8 dentro del iframe
-        stream = re.search(r"https://[^\"']+\.m3u8[^\"']+", html2)
+        # Esperar a que cargue el player
+        page.wait_for_timeout(10000)
 
-        if stream:
-            stream_url = stream.group(0)
+        browser.close()
 
-            print("Stream encontrado:", stream_url)
-
+        if stream_url:
             m3u = f"""#EXTM3U
 #EXTINF:-1 tvg-id="rcn" tvg-name="RCN",RCN
 #EXTVLCOPT:http-user-agent=Mozilla/5.0
@@ -41,13 +38,10 @@ try:
             with open("lista.m3u", "w") as f:
                 f.write(m3u)
 
-            print("Lista actualizada correctamente")
+            print("Lista IPTV actualizada correctamente")
 
         else:
-            print("No se encontró stream en iframe")
+            print("No se encontró ningún stream")
 
-    else:
-        print("No se encontró iframe")
-
-except Exception as e:
-    print("Error:", e)
+if __name__ == "__main__":
+    run()
