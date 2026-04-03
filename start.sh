@@ -1,3 +1,4 @@
 #!/bin/bash
+# Instalar navegadores de Playwright antes de arrancar Gunicorn
 playwright install chromium
-python proxy_pro.py
+exec gunicorn proxy_pro:app --bind 0.0.0.0:$PORT
