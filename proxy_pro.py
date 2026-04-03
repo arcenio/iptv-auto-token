@@ -3,8 +3,11 @@ from playwright.sync_api import sync_playwright
 import requests
 import time
 import os
+import logging
 
 app = Flask(__name__)
+
+logging.basicConfig(level=logging.INFO)
 
 LAST_STREAM = None
 LAST_UPDATE = 0
@@ -32,16 +35,17 @@ def get_stream():
 
         try:
             page.goto("https://www.cablevisionhd.com/rcn-en-vivo.html", timeout=60000)
-            page.wait_for_timeout(8000)
+            # Espera hasta que aparezca un request con .m3u8 o máximo 30s
+            page.wait_for_response(lambda r: ".m3u8" in r.url, timeout=30000)
         except Exception as e:
-            print("Error cargando página:", e)
+            logging.error("Error cargando página: %s", e)
 
         browser.close()
 
         if stream_url:
             LAST_STREAM = stream_url
             LAST_UPDATE = time.time()
-            print("Nuevo stream:", stream_url)
+            logging.info("Nuevo stream: %s", stream_url)
 
         return LAST_STREAM
 
@@ -71,9 +75,8 @@ def proxy():
             content_type=r.headers.get("Content-Type", "application/vnd.apple.mpegurl")
         )
     except Exception as e:
+        logging.error("Error en proxy: %s", e)
         return f"Error en proxy: {str(e)}", 500
 
 
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # IMPORTANTE para Railway
-    app.run(host="0.0.0.0", port=port)
+# Nota: no usamos app.run() aquí porque Railway levantará Gunicorn con el Procfile
