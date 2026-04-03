@@ -1,29 +1,35 @@
 from flask import Flask, Response
-import playwright.sync_api as p
+from playwright.sync_api import sync_playwright
 
 app = Flask(__name__)
 
 def get_stream():
     try:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
-        page.goto("https://www.cablevisionhd.com/rcn-en-vivo.html", timeout=60000)
-        page.wait_for_timeout(5000)  # espera 5 segundos
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(headless=True)
+            page = browser.new_page()
 
-        # buscar enlaces m3u8
-        links = page.locator("a[href*='.m3u8']").all()
-        if links:
-            url = links[0].get_attribute("href")
-            print(f"✅ Nuevo stream capturado: {url}")
-            return url
-        else:
-            print("⚠️ No se encontró ningún enlace .m3u8 en la página")
-            return None
+            m3u8_url = None
+
+            # Captura todas las peticiones de red
+            def handle_request(request):
+                nonlocal m3u8_url
+                if ".m3u8" in request.url:
+                    m3u8_url = request.url
+
+            page.on("request", handle_request)
+            page.goto("https://www.cablevisionhd.com/rcn-en-vivo.html", timeout=60000)
+            page.wait_for_timeout(10000)  # espera 10 segundos
+
+            if m3u8_url:
+                print(f"✅ Nuevo stream capturado: {m3u8_url}")
+                return m3u8_url
+            else:
+                print("⚠️ No se encontró ningún enlace .m3u8 en las peticiones de red")
+                return None
     except Exception as e:
         print(f"❌ Error en get_stream: {e}")
         return None
-    finally:
-        browser.close()
 
 @app.route("/")
 def home():
@@ -33,7 +39,7 @@ def home():
 def rcn():
     url = get_stream()
     if url:
-        # devolvemos un redirect al stream real
+        # devolvemos un playlist simple con el stream real
         return Response(f"#EXTM3U\n#EXTINF:-1,RCN\n{url}", mimetype="application/vnd.apple.mpegurl")
     else:
         return Response("Stream no disponible", status=503, mimetype="text/plain")
