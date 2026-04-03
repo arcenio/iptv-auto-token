@@ -9,14 +9,16 @@ app = Flask(__name__)
 LAST_STREAM = None
 LAST_UPDATE = 0
 
+
 def get_stream():
     global LAST_STREAM, LAST_UPDATE
 
+    # Cache por 5 minutos
     if time.time() - LAST_UPDATE < 300 and LAST_STREAM:
         return LAST_STREAM
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
         page = browser.new_page()
 
         stream_url = None
@@ -28,8 +30,11 @@ def get_stream():
 
         page.on("request", handle_request)
 
-        page.goto("https://www.cablevisionhd.com/rcn-en-vivo.html", timeout=60000)
-        page.wait_for_timeout(8000)
+        try:
+            page.goto("https://www.cablevisionhd.com/rcn-en-vivo.html", timeout=60000)
+            page.wait_for_timeout(8000)
+        except Exception as e:
+            print("Error cargando página:", e)
 
         browser.close()
 
@@ -39,6 +44,11 @@ def get_stream():
             print("Nuevo stream:", stream_url)
 
         return LAST_STREAM
+
+
+@app.route("/")
+def home():
+    return "IPTV Proxy funcionando 🚀"
 
 
 @app.route("/rcn.m3u8")
@@ -54,14 +64,16 @@ def proxy():
         "Origin": "https://www.cablevisionhd.com"
     }
 
-    r = requests.get(stream, headers=headers, stream=True)
-
-    return Response(
-        r.iter_content(chunk_size=1024),
-        content_type=r.headers.get("Content-Type")
-    )
+    try:
+        r = requests.get(stream, headers=headers, stream=True)
+        return Response(
+            r.iter_content(chunk_size=1024),
+            content_type=r.headers.get("Content-Type", "application/vnd.apple.mpegurl")
+        )
+    except Exception as e:
+        return f"Error en proxy: {str(e)}", 500
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
+    port = int(os.environ.get("PORT", 5000))  # IMPORTANTE para Railway
     app.run(host="0.0.0.0", port=port)
