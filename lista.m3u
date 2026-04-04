@@ -1,6 +1,3 @@
 #EXTM3U
 #EXTINF:-1 tvg-id="rcn" tvg-name="RCN",RCN
-#EXTVLCOPT:http-user-agent=Mozilla/5.0
-#EXTVLCOPT:http-referrer=https://www.cablevisionhd.com/
-#EXTVLCOPT:http-origin=https://www.cablevisionhd.com
 https://iptv-auto-token-production.up.railway.app/rcn.m3u8
