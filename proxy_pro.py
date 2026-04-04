@@ -1,32 +1,35 @@
 from flask import Flask, Response
-from playwright.sync_api import sync_playwright
+from seleniumwire import webdriver
 
 app = Flask(__name__)
 
 def get_stream():
     try:
-        with sync_playwright() as pw:
-            browser = pw.chromium.launch(headless=True)
-            page = browser.new_page()
+        options = webdriver.ChromeOptions()
+        options.add_argument("--headless")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
 
-            m3u8_url = None
+        driver = webdriver.Chrome(options=options)
+        driver.get("https://www.cablevisionhd.com/rcn-en-vivo.html")
 
-            # Captura todas las peticiones de red
-            def handle_request(request):
-                nonlocal m3u8_url
-                if ".m3u8" in request.url:
-                    m3u8_url = request.url
+        # Espera unos segundos para que cargue el reproductor
+        driver.implicitly_wait(10)
 
-            page.on("request", handle_request)
-            page.goto("https://www.cablevisionhd.com/rcn-en-vivo.html", timeout=60000)
-            page.wait_for_timeout(10000)  # espera 10 segundos
+        m3u8_url = None
+        for request in driver.requests:
+            if request.response and ".m3u8" in request.url:
+                m3u8_url = request.url
+                break
 
-            if m3u8_url:
-                print(f"✅ Nuevo stream capturado: {m3u8_url}")
-                return m3u8_url
-            else:
-                print("⚠️ No se encontró ningún enlace .m3u8 en las peticiones de red")
-                return None
+        driver.quit()
+
+        if m3u8_url:
+            print(f"✅ Nuevo stream capturado: {m3u8_url}")
+            return m3u8_url
+        else:
+            print("⚠️ No se encontró ningún enlace .m3u8 en las peticiones de red")
+            return None
     except Exception as e:
         print(f"❌ Error en get_stream: {e}")
         return None
@@ -39,7 +42,6 @@ def home():
 def rcn():
     url = get_stream()
     if url:
-        # devolvemos un playlist simple con el stream real
         return Response(f"#EXTM3U\n#EXTINF:-1,RCN\n{url}", mimetype="application/vnd.apple.mpegurl")
     else:
         return Response("Stream no disponible", status=503, mimetype="text/plain")
