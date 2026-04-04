@@ -68,6 +68,10 @@ def segment():
 
     r = requests.get(src, headers=HEADERS, stream=True)
     if r.status_code == 200:
-        return Response(r.content, mimetype="video/mp2t")
+        def generate():
+            for chunk in r.iter_content(chunk_size=8192):
+                if chunk:
+                    yield chunk
+        return Response(generate(), mimetype="video/mp2t")
     else:
         return Response("Error al cargar segmento", status=502)
