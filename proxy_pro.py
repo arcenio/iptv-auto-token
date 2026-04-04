@@ -40,6 +40,7 @@ def home():
 
 @app.route("/rcn.m3u8")
 def rcn():
+    # Cada vez que VLC pide este endpoint, se regenera el enlace
     url = get_stream()
     if url:
         return Response(f"#EXTM3U\n#EXTINF:-1,RCN\n{url}", mimetype="application/vnd.apple.mpegurl")
