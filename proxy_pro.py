@@ -1,8 +1,15 @@
-from flask import Flask, Response
+from flask import Flask, Response, request
 import requests
 from seleniumwire import webdriver
 
 app = Flask(__name__)
+
+# Cabeceras que capturaste del streaming original
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36",
+    "Referer": "https://www.cablevisionhd.com/",
+    "Origin": "https://www.cablevisionhd.com"
+}
 
 def get_stream():
     try:
@@ -37,15 +44,31 @@ def rcn():
     if not url:
         return Response("Stream no disponible", status=503, mimetype="text/plain")
 
-    # Pedimos el .m3u8 real con cabeceras necesarias
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Referer": "https://www.cablevisionhd.com/",
-        "Origin": "https://www.cablevisionhd.com"
-    }
-    r = requests.get(url, headers=headers)
+    r = requests.get(url, headers=HEADERS)
+    if r.status_code != 200:
+        return Response("Error al cargar playlist", status=502, mimetype="text/plain")
 
+    # Reescribir las URLs de segmentos para que pasen por el proxy
+    playlist = []
+    base_url = url.rsplit("/", 1)[0]
+    for line in r.text.splitlines():
+        if line.endswith(".ts"):
+            # Redirigir segmentos al proxy
+            proxied = f"/segment?src={base_url}/{line}"
+            playlist.append(proxied)
+        else:
+            playlist.append(line)
+
+    return Response("\n".join(playlist), mimetype="application/vnd.apple.mpegurl")
+
+@app.route("/segment")
+def segment():
+    src = request.args.get("src")
+    if not src:
+        return Response("Segmento no especificado", status=400)
+
+    r = requests.get(src, headers=HEADERS, stream=True)
     if r.status_code == 200:
-        return Response(r.text, mimetype="application/vnd.apple.mpegurl")
+        return Response(r.content, mimetype="video/mp2t")
     else:
-        return Response("Error al cargar stream", status=502, mimetype="text/plain")
+        return Response("Error al cargar segmento", status=502)
