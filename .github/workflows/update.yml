@@ -1,9 +1,12 @@
-name: Actualizar lista IPTV PRO
+name: Actualizar lista IPTV
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/30 * * * *"
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   update:
@@ -11,25 +14,30 @@ jobs:
 
     steps:
       - name: Clonar repositorio
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Instalar Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: Instalar dependencias
         run: |
-          pip install playwright
-          playwright install --with-deps chromium
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Ejecutar script PRO
-        run: python update_lista.py
+      - name: Instalar Playwright Chromium
+        run: |
+          playwright install chromium
+
+      - name: Ejecutar script
+        run: |
+          python update_lista.py
 
       - name: Subir cambios
         run: |
-          git config --global user.name "iptv-bot"
-          git config --global user.email "bot@github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add lista.m3u
-          git commit -m "Actualizar stream automatico" || echo "Sin cambios"
+          git commit -m "Actualizar lista.m3u" || echo "No hay cambios"
           git push
